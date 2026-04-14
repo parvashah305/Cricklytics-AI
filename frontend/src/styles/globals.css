@@ -1,0 +1,47 @@
+:root {
+  --bg-void: #050508;
+  --bg-surface: #10121e;
+  --green-base: #22c55e;
+  --text-primary: #f0f2ff;
+  --text-secondary: #8b90a8;
+  --border-soft: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+}
+
+.glow-card {
+  max-width: 760px;
+  width: 100%;
+  padding: 24px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--bg-surface);
+}
+
+.kicker {
+  margin: 0 0 8px;
+  color: var(--green-base);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.subtext {
+  color: var(--text-secondary);
+}
