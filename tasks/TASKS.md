@@ -20,7 +20,7 @@ Rule: after each completed task, change `[ ]` to `[x]` and add a completion date
 
 - [x] Implement live Cricbuzz/RapidAPI polling client in producer
 - [x] Publish normalized ball events to Kafka with `match_id` key partitioning
-- [ ] Add Kafka event schema validation in producer
+- [x] Add Kafka event schema validation in producer
 - [ ] Add Spark `foreachBatch` writer for MongoDB `ball_events`
 - [ ] Add Spark writer for `analytics` collection updates
 - [ ] Add Redis invalidation after Spark writes per `match_id`

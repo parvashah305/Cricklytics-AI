@@ -11,6 +11,22 @@ from cricket_client import CricketApiClient, CricketApiConfig
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+REQUIRED_EVENT_FIELDS: dict[str, type] = {
+    "event_id": str,
+    "match_id": str,
+    "innings": int,
+    "over": float,
+    "ball": int,
+    "batsman": str,
+    "bowler": str,
+    "runs": int,
+    "is_wicket": bool,
+    "is_boundary": bool,
+    "is_dot": bool,
+    "delivery_type": str,
+    "timestamp": int,
+}
+
 
 def make_mock_ball_event() -> dict[str, Any]:
     now_ms = int(time.time() * 1000)
@@ -29,6 +45,32 @@ def make_mock_ball_event() -> dict[str, Any]:
         "delivery_type": "legal",
         "timestamp": now_ms,
     }
+
+
+def validate_event_schema(event: dict[str, Any]) -> tuple[bool, str]:
+    for field, expected_type in REQUIRED_EVENT_FIELDS.items():
+        if field not in event:
+            return False, f"missing field: {field}"
+
+        value = event[field]
+        if expected_type is float:
+            if not isinstance(value, (float, int)):
+                return False, f"invalid type for {field}: expected float-compatible"
+        elif not isinstance(value, expected_type):
+            return False, f"invalid type for {field}: expected {expected_type.__name__}"
+
+    if not event["match_id"].strip():
+        return False, "match_id cannot be empty"
+    if event["innings"] <= 0:
+        return False, "innings must be positive"
+    if event["ball"] < 0:
+        return False, "ball cannot be negative"
+    if event["runs"] < 0:
+        return False, "runs cannot be negative"
+    if event["timestamp"] <= 0:
+        return False, "timestamp must be positive epoch milliseconds"
+
+    return True, "ok"
 
 
 def extract_latest_ball_event(payload: dict[str, Any], fallback_match_id: str) -> dict[str, Any]:
@@ -84,6 +126,11 @@ def main() -> None:
             else:
                 event_id = str(event.get("event_id", ""))
                 if event_id and event_id != last_event_id:
+                    valid, reason = validate_event_schema(event)
+                    if not valid:
+                        logger.warning("event failed schema validation: %s", reason)
+                        time.sleep(config.poll_interval_seconds)
+                        continue
                     producer.send(
                         topic=config.kafka_topic_ball_events,
                         key=event["match_id"].encode("utf-8"),
@@ -97,6 +144,11 @@ def main() -> None:
         except Exception as error:
             logger.warning("live polling failed, using mock event: %s", error)
             event = make_mock_ball_event()
+            valid, reason = validate_event_schema(event)
+            if not valid:
+                logger.warning("mock event failed schema validation: %s", reason)
+                time.sleep(config.poll_interval_seconds)
+                continue
             producer.send(
                 topic=config.kafka_topic_ball_events,
                 key=event["match_id"].encode("utf-8"),
