@@ -3,6 +3,7 @@ import os
 
 from pymongo import MongoClient
 from pymongo.errors import BulkWriteError
+from redis import Redis
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, from_json
 from pyspark.sql.types import (
@@ -16,6 +17,30 @@ from pyspark.sql.types import (
 )
 
 from analytics.pressure_index import compute_pressure_index
+
+
+def invalidate_redis_cache(match_ids: list[str]) -> None:
+    if not match_ids:
+        return
+
+    redis_host = os.getenv("REDIS_HOST", "localhost")
+    redis_port = int(os.getenv("REDIS_PORT", "6379"))
+    redis_client = Redis(host=redis_host, port=redis_port, decode_responses=True)
+
+    keys_to_delete: list[str] = []
+    for match_id in match_ids:
+        keys_to_delete.extend(
+            [
+                f"analytics:{match_id}",
+                f"scorecard:{match_id}",
+                f"match:{match_id}:analytics",
+                f"match:{match_id}:scorecard",
+            ]
+        )
+
+    if keys_to_delete:
+        redis_client.delete(*keys_to_delete)
+    redis_client.close()
 
 
 def build_ball_schema() -> StructType:
@@ -140,6 +165,7 @@ def write_ball_events_to_mongo(batch_df: DataFrame, _batch_id: int) -> None:
             upsert=True,
         )
 
+    invalidate_redis_cache(list(by_match.keys()))
     mongo_client.close()
 
 

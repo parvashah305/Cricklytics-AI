@@ -23,7 +23,7 @@ Rule: after each completed task, change `[ ]` to `[x]` and add a completion date
 - [x] Add Kafka event schema validation in producer
 - [x] Add Spark `foreachBatch` writer for MongoDB `ball_events`
 - [x] Add Spark writer for `analytics` collection updates
-- [ ] Add Redis invalidation after Spark writes per `match_id`
+- [x] Add Redis invalidation after Spark writes per `match_id`
 
 ## Phase 3 - Backend API + Caching
 
